@@ -134,19 +134,20 @@ var defaultSettings = Settings {
 
 
 // WriteSettings writes to the configuration file the settings provided as a parameter
-func WriteSettings(s Settings) (err error) {
+func WriteSettings(s Settings) error {
 
 	// Check if the configuration directory exists and if it doesn't it creates it
-	_, err = os.Stat("/etc/gocker-ci-cd")
+	_, err := os.Stat("/etc/gocker-ci-cd")
 
 	if os.IsNotExist(err) {
 		err = os.MkdirAll("/etc/gocker-ci-cd", os.ModePerm)
 
 		if err != nil {
-			return
+			return err
 		}
+
 	} else if err != nil {
-		return
+		return err
 	}
 
 	buf := new(bytes.Buffer)
@@ -158,27 +159,30 @@ func WriteSettings(s Settings) (err error) {
 
 	err = ioutil.WriteFile("/etc/gocker-ci-cd/config.toml", buf.Bytes(), 0644)
 
-	return
+	return err
 }
 
 // ReadSettings reads the configuration file and returns them
-func ReadSettings() (s Settings, err error) {
+func ReadSettings() (Settings, error) {
+	
+	var s Settings
+
 	// Check if the configuration file exists and if it doesn't, write the default settings
-	_, err = os.Stat("/etc/gocker-ci-cd/config.toml")
+	_, err := os.Stat("/etc/gocker-ci-cd/config.toml")
 
 	if os.IsNotExist(err) {
 		err = WriteSettings(defaultSettings)
 
 		if err != nil {
-			return
+			return s, err
 		}
 	}
 
 	if err != nil {
-		return
+		return s, err
 	}
 
 	_, err = toml.DecodeFile("/etc/gocker-ci-cd/config.toml", &s)
 
-	return
+	return s, err
 }
