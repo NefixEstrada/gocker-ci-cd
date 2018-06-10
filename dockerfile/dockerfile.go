@@ -15,10 +15,15 @@ type Dockerfile struct {
 }
 
 // NewDockerfile creates a new Dockerfile instance using the path provided as an argument
-func NewDockerfile (path string) (d Dockerfile, err error){
+func NewDockerfile (path string) (Dockerfile, error){
+	var (
+		d Dockerfile
+		err error
+	)
+
 	d.Path, err = os.Open(path)
 
-	return
+	return d, err
 }
 
 // GetFromTag returns an array of all the FROM tags content. Usually, it's just going to return a signle value

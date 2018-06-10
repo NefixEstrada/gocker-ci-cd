@@ -49,7 +49,12 @@ type repoJSONResponse struct {
 }
 
 // GetRepo queries the Docker Hub API searching for the repository specified in the parameters
-func GetRepo(username, name string) (r Repo, err error) {
+func GetRepo(username, name string) (Repo, error) {
+	var (
+		r Repo
+		err error
+	)
+
 	if username == "_" {
 		username = "library"
 	}
@@ -58,13 +63,13 @@ func GetRepo(username, name string) (r Repo, err error) {
 	resp, err := http.Get(url)
 
 	if err != nil {
-		return
+		return r, err
 	}
 
 	statusCode := resp.StatusCode
 	if statusCode == 404 {
 		err = errors.New("not found: the repository wasn't found")
-		return
+		return r, err
 	}
 
 	var repoJSON repoJSONResponse
@@ -72,18 +77,18 @@ func GetRepo(username, name string) (r Repo, err error) {
 	err = json.NewDecoder(resp.Body).Decode(&repoJSON)
 
 	if err != nil {
-		return
+		return r, err
 	}
 
 	tags, err := GetRepoTags(repoJSON.User, repoJSON.Name)
 
 	if err != nil {
-		return
+		return r, err
 	}
 
 	r = Repo{repoJSON.User, repoJSON.Name, repoJSON.Namespace, repoJSON.LastUpdated, tags}
 
-	return
+	return r, err
 }
 
 // RepoTags is an slice of Tags. It's what is going to be returned in the functions
@@ -135,18 +140,23 @@ type repoTagsJSONResponse struct {
 }
 
 // GetRepoTags queries the Docker Registry searching for the tags of the image
-func GetRepoTags(username, name string) (rT RepoTags, err error) {
+func GetRepoTags(username, name string) (RepoTags, error) {
+	var (
+		rT RepoTags
+		err error
+	)
+
 	url := fmt.Sprintf("%s://%s/%s/%s/%s/%s/tags?page_size=100", Protocol, DomainName, ApiVersion, BaseUrl, username, name)
 	resp, err := http.Get(url)
 
 	if err != nil {
-		return
+		return rT, err
 	}
 
 	statusCode := resp.StatusCode
 	if statusCode == 404 {
 		err = errors.New("not found: the repo wasn't found")
-		return
+		return rT, err
 	}
 
 	var repoTagsJSON repoTagsJSONResponse
@@ -154,7 +164,7 @@ func GetRepoTags(username, name string) (rT RepoTags, err error) {
 	err = json.NewDecoder(resp.Body).Decode(&repoTagsJSON)
 
 	if err != nil {
-		return
+		return rT, err
 	}
 
 	for _, tag := range repoTagsJSON.Results {
@@ -166,11 +176,16 @@ func GetRepoTags(username, name string) (rT RepoTags, err error) {
 		rT = append(rT, Tag{tag.Name, tag.ID, tag.LastUpdated, tagImages})
 	}
 
-	return
+	return rT, err
 }
 
 // GetRegistryTag queries the Docker Registry searching for the tag in the image
-func (r *Repo) GetTag(repo Repo, name string) (t Tag, err error) {
+func (r *Repo) GetTag(repo Repo, name string) (Tag, error) {
+	var (
+		t Tag
+		err error
+	)
+
 	for _, tag := range r.Tags {
 		if tag.Name == name {
 			t = tag
@@ -179,8 +194,8 @@ func (r *Repo) GetTag(repo Repo, name string) (t Tag, err error) {
 
 	if reflect.DeepEqual(t, Tag{}) {
 		err = errors.New("not found: the tag wasn't found in the repo")
-		return
+		return t, err
 	}
 
-	return
+	return t, err
 }
